@@ -1,2 +1,15 @@
+[project]
+name = "zenith26-fest-system"
+version = "0.1.0"
+description = "Zenith '26 College Fest Management System"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "openpyxl>=3.1.0",
+]
+
 [tool.vercel]
 entrypoint = "backend.main:app"
