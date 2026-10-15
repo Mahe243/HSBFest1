@@ -1,12 +1,27 @@
+import os
 import sqlite3
 from pathlib import Path
 
-# Resolve path to fest.db at the project root
+# Resolve path to fest.db: use /tmp on Vercel serverless environment because
+# the deployment directory is read-only.
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "fest.db"
+if os.environ.get("VERCEL"):
+    DB_PATH = Path("/tmp/fest.db")
+else:
+    DB_PATH = BASE_DIR / "fest.db"
 
 def get_db_connection() -> sqlite3.Connection:
     """Returns a SQLite connection with Row factory enabled for column access by name."""
+    if os.environ.get("VERCEL") and not DB_PATH.exists():
+        init_db()
+        try:
+            import sys
+            if str(Path(__file__).resolve().parent) not in sys.path:
+                sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from seed_data import seed_events
+            seed_events()
+        except Exception as e:
+            print(f"Auto-seed error on Vercel: {e}")
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     # Enable foreign keys
@@ -15,7 +30,9 @@ def get_db_connection() -> sqlite3.Connection:
 
 def init_db():
     """Initializes the database schema with events and registrations tables."""
-    conn = get_db_connection()
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON;")
     cursor = conn.cursor()
 
     cursor.execute("""
